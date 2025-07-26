@@ -18,6 +18,34 @@ A fast, robust CSV to JSON converter written in C that handles complex CSV scena
 - **Styled Output**: Optional formatted JSON with indentation
 - **Zero Dependencies**: Pure C implementation with no external libraries
 
+## Supported Platforms
+
+| Platform | Architecture | Status | Notes |
+|----------|-------------|---------|-------|
+| **Linux** | x86_64 (AMD64) | ✅ Supported | Native and cross-compilation |
+| **Linux** | ARM64 (AArch64) | ✅ Supported | Cross-compilation available |
+| **macOS** | Intel (x86_64) | ✅ Supported | Cross-compilation from Apple Silicon |
+| **macOS** | Apple Silicon (ARM64) | ✅ Supported | Native compilation |
+| **Windows** | x86_64 (AMD64) | ✅ Supported | MinGW-w64 cross-compilation, MSVC native |
+| **Windows** | i386 (32-bit) | ✅ Supported | MinGW-w64 cross-compilation, MSVC native |
+| **Windows** | ARM64 (AArch64) | ✅ Supported | MinGW-w64 cross-compilation, MSVC native |
+
+### Build Requirements
+
+#### Basic Requirements
+- **C99 Compiler**: GCC 4.9+, Clang 3.5+, or MSVC 2015+
+- **Make**: GNU Make or compatible (optional on Windows)
+
+#### Cross-compilation Tools (optional)
+- **Linux ARM64**: `aarch64-linux-gnu-gcc`
+- **macOS targets**: Xcode Command Line Tools
+- **Windows targets**: MinGW-w64 (`x86_64-w64-mingw32-gcc`, `i686-w64-mingw32-gcc`, `aarch64-w64-mingw32-gcc`)
+
+#### Windows-specific
+- **MinGW-w64**: For cross-compilation from Unix/Linux/macOS
+- **MSVC**: Visual Studio Build Tools or Visual Studio
+- **Windows SDK**: For native Windows development
+
 ## Installation
 
 ### Build from Source
@@ -389,34 +417,6 @@ Usage:
   cj --styled|-s [file]   Convert CSV to formatted JSON
   cj                      Show this help
 ```
-
-## Supported Platforms
-
-| Platform | Architecture | Status | Notes |
-|----------|-------------|---------|-------|
-| **Linux** | x86_64 (AMD64) | ✅ Supported | Native and cross-compilation |
-| **Linux** | ARM64 (AArch64) | ✅ Supported | Cross-compilation available |
-| **macOS** | Intel (x86_64) | ✅ Supported | Cross-compilation from Apple Silicon |
-| **macOS** | Apple Silicon (ARM64) | ✅ Supported | Native compilation |
-| **Windows** | x86_64 (AMD64) | ✅ Supported | MinGW-w64 cross-compilation, MSVC native |
-| **Windows** | i386 (32-bit) | ✅ Supported | MinGW-w64 cross-compilation, MSVC native |
-| **Windows** | ARM64 (AArch64) | ✅ Supported | MinGW-w64 cross-compilation, MSVC native |
-
-### Build Requirements
-
-#### Basic Requirements
-- **C99 Compiler**: GCC 4.9+, Clang 3.5+, or MSVC 2015+
-- **Make**: GNU Make or compatible (optional on Windows)
-
-#### Cross-compilation Tools (optional)
-- **Linux ARM64**: `aarch64-linux-gnu-gcc`
-- **macOS targets**: Xcode Command Line Tools
-- **Windows targets**: MinGW-w64 (`x86_64-w64-mingw32-gcc`, `i686-w64-mingw32-gcc`, `aarch64-w64-mingw32-gcc`)
-
-#### Windows-specific
-- **MinGW-w64**: For cross-compilation from Unix/Linux/macOS
-- **MSVC**: Visual Studio Build Tools or Visual Studio
-- **Windows SDK**: For native Windows development
 
 ## Performance
 

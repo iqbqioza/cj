@@ -343,23 +343,25 @@ jobs:
         # Skip the first few lines and add the rest
         sed '1,6d' release_notes.md >> final_release_notes.md
         
-        # Check if release already exists
-        if gh release view ${{ steps.version.outputs.VERSION }} >/dev/null 2>&1; then
-          echo "Release already exists, updating it..."
-          # Upload assets to existing release
-          for file in release-assets/*; do
-            if [ -f "$file" ]; then
-              gh release upload ${{ steps.version.outputs.VERSION }} "$file" --clobber || true
-            fi
-          done
-        else
-          echo "Creating new release..."
-          # Create release with combined notes
-          gh release create ${{ steps.version.outputs.VERSION }} \
+        # Try to create release first, if it fails then upload assets to existing release
+        echo "Attempting to create release..."
+        if gh release create ${{ steps.version.outputs.VERSION }} \
             --title "${{ steps.version.outputs.VERSION }}" \
             --notes-file final_release_notes.md \
             ${{ contains(steps.version.outputs.VERSION, '-') && '--prerelease' || '' }} \
-            release-assets/*
+            release-assets/* 2>/dev/null; then
+          echo "Release created successfully!"
+        else
+          echo "Release may already exist, trying to upload assets..."
+          # Upload assets to existing release
+          for file in release-assets/*; do
+            if [ -f "$file" ]; then
+              echo "Uploading $(basename "$file")..."
+              gh release upload ${{ steps.version.outputs.VERSION }} "$file" --clobber || true
+            fi
+          done
+          # Update release notes if possible
+          gh release edit ${{ steps.version.outputs.VERSION }} --notes-file final_release_notes.md || true
         fi
     
     - name: Create release summary

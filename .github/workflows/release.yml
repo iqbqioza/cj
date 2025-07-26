@@ -101,7 +101,7 @@ jobs:
     - name: Setup MinGW
       uses: msys2/setup-msys2@v2
       with:
-        msys: MINGW64
+        msystem: MINGW64
         install: >-
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-make
@@ -179,7 +179,7 @@ jobs:
         
         # Create a comprehensive checksum file
         cd release-assets
-        sha256sum cj-* > SHA256SUMS
+        find . -name "cj-*" -type f ! -name "*.sha256" -exec sha256sum {} \; | sed 's|./||' > SHA256SUMS
         cd ..
         
         # List all assets
@@ -277,6 +277,7 @@ jobs:
         prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
         files: release-assets/*
         body_path: release_notes.md
+        fail_on_unmatched_files: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     

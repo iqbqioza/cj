@@ -277,8 +277,6 @@ jobs:
         prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
         files: release-assets/*
         body_path: release_notes.md
-        make_latest: true
-        generate_release_notes: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     

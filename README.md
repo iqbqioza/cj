@@ -7,6 +7,40 @@
 
 A fast, robust CSV to JSON converter written in C that handles complex CSV scenarios including multiline fields, quoted data, and various newline formats.
 
+## Table of Contents
+
+- [Features](#features)
+- [Supported Platforms](#supported-platforms)
+  - [Build Requirements](#build-requirements)
+- [Installation](#installation)
+  - [Quick Install (Recommended)](#quick-install-recommended)
+  - [Build from Source](#build-from-source)
+  - [Project Structure](#project-structure)
+  - [System Installation](#system-installation-optional)
+- [Usage](#usage)
+  - [Basic Usage](#basic-usage)
+  - [Command Options](#command-options)
+- [Examples](#examples)
+  - [Basic CSV](#basic-csv)
+  - [Styled Output](#styled-output)
+  - [Complex CSV with Multiline Fields](#complex-csv-with-multiline-fields)
+  - [Quoted Fields and Special Characters](#quoted-fields-and-special-characters)
+  - [Numeric Type Detection](#numeric-type-detection)
+- [Advanced Features](#advanced-features)
+  - [Multiline Field Handling](#multiline-field-handling)
+  - [Cross-Platform Newline Support](#cross-platform-newline-support)
+  - [Large File Support](#large-file-support)
+- [Testing](#testing)
+- [Error Handling](#error-handling)
+- [Performance](#performance)
+- [Limitations](#limitations)
+- [Contributing](#contributing)
+  - [Quick Start](#quick-start)
+  - [Documentation](#documentation)
+  - [Development Workflow](#development-workflow)
+- [License](#license)
+- [Version History](#version-history)
+
 ## Features
 
 - **Dynamic Memory Management**: Handles CSV files of any size (unlimited rows, fields, and field length)

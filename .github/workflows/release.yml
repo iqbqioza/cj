@@ -345,10 +345,17 @@ jobs:
         
         # Try to create release first, if it fails then upload assets to existing release
         echo "Attempting to create release..."
+        
+        # Set prerelease flag if version contains hyphen
+        PRERELEASE_FLAG=""
+        if [[ "${{ steps.version.outputs.VERSION }}" == *"-"* ]]; then
+          PRERELEASE_FLAG="--prerelease"
+        fi
+        
         if gh release create ${{ steps.version.outputs.VERSION }} \
             --title "${{ steps.version.outputs.VERSION }}" \
             --notes-file final_release_notes.md \
-            ${{ contains(steps.version.outputs.VERSION, '-') && '--prerelease' || '' }} \
+            $PRERELEASE_FLAG \
             release-assets/* 2>/dev/null; then
           echo "Release created successfully!"
         else

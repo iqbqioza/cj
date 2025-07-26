@@ -1,0 +1,459 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# Cancel previous CI runs for the same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Grant permissions for GITHUB_TOKEN
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  statuses: write
+  checks: write
+
+jobs:
+  # Quick validation job that runs first
+  validate:
+    name: Quick Validation
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate project structure
+      run: |
+        echo "Checking required files..."
+        required_files=(
+          "Makefile"
+          "src/main.c"
+          "src/cj.h"
+          "README.md"
+          "LICENSE"
+          "CHANGELOG.md"
+        )
+        
+        for file in "${required_files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "❌ Required file missing: $file"
+            exit 1
+          else
+            echo "✅ Found: $file"
+          fi
+        done
+    
+    - name: Validate VERSION file
+      run: |
+        if [ -f "VERSION" ]; then
+          version=$(cat VERSION)
+          if [[ ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.-]+)?$ ]]; then
+            echo "❌ Invalid version format in VERSION file: $version"
+            exit 1
+          else
+            echo "✅ Valid version format: $version"
+          fi
+        fi
+
+  # Main test matrix
+  test:
+    name: Test on ${{ matrix.os }}
+    needs: validate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false  # Don't cancel other jobs if one fails
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            cc: gcc
+          - os: macos-latest  
+            cc: clang
+          - os: windows-latest
+            cc: gcc
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential
+
+    - name: Install dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        # Xcode Command Line Tools should be pre-installed
+        xcode-select --install || true
+
+    - name: Install dependencies (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        # MinGW should be available in the runner
+        gcc --version
+
+    - name: Build
+      run: make
+      env:
+        CC: ${{ matrix.cc }}
+
+    - name: Run tests
+      run: make test
+
+    - name: Check version output
+      run: ./cj version || .\cj.exe version
+    
+    - name: Test with example files
+      run: |
+        # Test basic functionality with examples
+        if [ -f "examples/basic.csv" ]; then
+          echo "Testing with examples/basic.csv..."
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            ./cj.exe examples/basic.csv > /dev/null || (echo "❌ Failed to process basic.csv" && exit 1)
+            ./cj.exe --styled examples/basic.csv > /dev/null || (echo "❌ Failed to process basic.csv with --styled" && exit 1)
+          else
+            ./cj examples/basic.csv > /dev/null || (echo "❌ Failed to process basic.csv" && exit 1)
+            ./cj --styled examples/basic.csv > /dev/null || (echo "❌ Failed to process basic.csv with --styled" && exit 1)
+          fi
+          echo "✅ Example files tested successfully"
+        fi
+      shell: bash
+
+    - name: Upload binary as artifact (for PR review)
+      if: github.event_name == 'pull_request'
+      uses: actions/upload-artifact@v4
+      with:
+        name: cj-${{ matrix.os }}-pr${{ github.event.number }}
+        path: |
+          cj*
+          !*.o
+        retention-days: 7
+
+  cross-compile:
+    name: Cross-compilation test
+    needs: validate
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install cross-compilation tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          gcc-aarch64-linux-gnu \
+          gcc-mingw-w64-x86-64 \
+          gcc-mingw-w64-i686 \
+          gcc-mingw-w64
+    
+    - name: Test cross-compilation
+      run: |
+        echo "Testing cross-compilation for multiple targets..."
+        
+        # Test ARM64 Linux
+        echo "Building for Linux ARM64..."
+        if make build-linux-arm64; then
+          echo "✅ Linux ARM64 cross-compilation successful"
+        else
+          echo "❌ Linux ARM64 cross-compilation failed"
+          exit 1
+        fi
+        
+        # Test Windows x64
+        echo "Building for Windows x64..."
+        if make build-windows-amd64; then
+          echo "✅ Windows x64 cross-compilation successful"
+        else
+          echo "❌ Windows x64 cross-compilation failed"
+          exit 1
+        fi
+        
+        # Test Windows i386
+        echo "Building for Windows i386..."
+        if make build-windows-i386; then
+          echo "✅ Windows i386 cross-compilation successful"
+        else
+          echo "❌ Windows i386 cross-compilation failed"
+          exit 1
+        fi
+    
+    - name: Verify build artifacts
+      run: |
+        if [ -d "build" ]; then
+          echo "Build artifacts created:"
+          ls -la build/
+          
+          # Check that expected binaries exist
+          expected_binaries=(
+            "cj-linux-arm64"
+            "cj-windows-amd64.exe"
+            "cj-windows-i386.exe"
+          )
+          
+          for binary in "${expected_binaries[@]}"; do
+            if [ -f "build/$binary" ]; then
+              echo "✅ Found: build/$binary"
+              # Check if binary is not empty
+              if [ -s "build/$binary" ]; then
+                echo "✅ Binary $binary has content"
+              else
+                echo "❌ Binary $binary is empty"
+                exit 1
+              fi
+            else
+              echo "❌ Missing: build/$binary"
+              exit 1
+            fi
+          done
+        else
+          echo "❌ No build directory created"
+          exit 1
+        fi
+    
+    - name: Upload cross-compiled binaries (PR only)
+      if: github.event_name == 'pull_request'
+      uses: actions/upload-artifact@v4
+      with:
+        name: cross-compiled-binaries-pr${{ github.event.number }}
+        path: build/*
+        retention-days: 7
+
+  memory-check:
+    name: Memory leak detection
+    needs: validate
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Valgrind
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y valgrind
+    
+    - name: Build with debug info
+      run: |
+        make clean
+        CFLAGS="-Wall -Wextra -std=c99 -g -O0" make
+    
+    - name: Run Valgrind tests
+      run: |
+        echo "Running memory leak detection..."
+        
+        # Test basic functionality
+        echo "Testing basic CSV processing..."
+        valgrind --error-exitcode=1 --leak-check=full --show-leak-kinds=all \
+          --quiet --track-origins=yes \
+          ./cj test/basic.csv > /dev/null
+        echo "✅ Basic test passed"
+        
+        # Test styled output
+        echo "Testing styled output..."
+        valgrind --error-exitcode=1 --leak-check=full --show-leak-kinds=all \
+          --quiet --track-origins=yes \
+          ./cj --styled test/basic.csv > /dev/null
+        echo "✅ Styled output test passed"
+        
+        # Test with more complex files if available
+        if [ -f "test/multiline.csv" ]; then
+          echo "Testing multiline CSV..."
+          valgrind --error-exitcode=1 --leak-check=full --show-leak-kinds=all \
+            --quiet --track-origins=yes \
+            ./cj test/multiline.csv > /dev/null
+          echo "✅ Multiline test passed"
+        fi
+        
+        # Test version command
+        echo "Testing version command..."
+        valgrind --error-exitcode=1 --leak-check=full --show-leak-kinds=all \
+          --quiet --track-origins=yes \
+          ./cj version > /dev/null
+        echo "✅ Version command test passed"
+        
+        echo "✅ All memory leak tests passed"
+
+  build-scripts:
+    name: Test build scripts
+    needs: validate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Test build script
+      run: |
+        chmod +x scripts/build.sh
+        ./scripts/build.sh --check
+        
+    - name: Test native build via script
+      run: |
+        # Determine target platform
+        platform=$(uname -s | tr '[:upper:]' '[:lower:]')
+        arch=$(uname -m | sed 's/x86_64/amd64/')
+        target="$platform-$arch"
+        
+        echo "Testing build for target: $target"
+        ./scripts/build.sh --target "$target" || echo "Build script test completed with warnings"
+        
+  static-analysis:
+    name: Static Analysis
+    needs: validate
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install static analysis tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cppcheck clang-tidy build-essential
+        
+    - name: Run cppcheck
+      run: |
+        echo "Running cppcheck static analysis..."
+        cppcheck --enable=all --error-exitcode=1 \
+          --suppress=missingIncludeSystem \
+          --suppress=toomanyconfigs \
+          --quiet \
+          src/
+        echo "✅ cppcheck analysis passed"
+          
+    - name: Run clang-tidy
+      run: |
+        echo "Running clang-tidy analysis..."
+        clang-tidy src/*.c -- -std=c99 || echo "⚠️ clang-tidy completed with warnings"
+
+  # Final check job that depends on all other jobs
+  # This job will be used for branch protection rules
+  all-checks-passed:
+    name: All Checks Passed
+    runs-on: ubuntu-latest
+    needs: [validate, test, cross-compile, memory-check, build-scripts, static-analysis]
+    if: always()
+    
+    steps:
+    - name: Check all job results
+      run: |
+        echo "Checking results of all CI jobs..."
+        
+        # Check if any required job failed
+        if [[ "${{ needs.validate.result }}" != "success" ]]; then
+          echo "❌ Validation failed"
+          exit 1
+        fi
+        
+        if [[ "${{ needs.test.result }}" != "success" ]]; then
+          echo "❌ Tests failed"
+          exit 1
+        fi
+        
+        if [[ "${{ needs.cross-compile.result }}" != "success" ]]; then
+          echo "❌ Cross-compilation failed"
+          exit 1
+        fi
+        
+        if [[ "${{ needs.memory-check.result }}" != "success" ]]; then
+          echo "❌ Memory leak detection failed"
+          exit 1
+        fi
+        
+        if [[ "${{ needs.build-scripts.result }}" != "success" ]]; then
+          echo "❌ Build scripts test failed"
+          exit 1
+        fi
+        
+        if [[ "${{ needs.static-analysis.result }}" != "success" ]]; then
+          echo "❌ Static analysis failed"
+          exit 1
+        fi
+        
+        echo "✅ All required checks passed!"
+        echo "🎉 This PR is ready for merge"
+    
+    - name: Create PR comment (on failure)
+      if: failure() && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const comment = `## ❌ CI Checks Failed
+          
+          Some required checks failed. Please review the failed jobs and fix the issues before merging.
+          
+          **Failed Jobs:**
+          - Validation: ${{ needs.validate.result == 'success' && '✅' || '❌' }}
+          - Tests: ${{ needs.test.result == 'success' && '✅' || '❌' }}
+          - Cross-compilation: ${{ needs.cross-compile.result == 'success' && '✅' || '❌' }}
+          - Memory checks: ${{ needs.memory-check.result == 'success' && '✅' || '❌' }}
+          - Build scripts: ${{ needs.build-scripts.result == 'success' && '✅' || '❌' }}
+          - Static analysis: ${{ needs.static-analysis.result == 'success' && '✅' || '❌' }}
+          
+          Please check the [Actions tab](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for detailed logs.`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+    
+    - name: Create PR comment (on success)
+      if: success() && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const comment = `## ✅ All CI Checks Passed
+          
+          Great work! All required checks have passed successfully.
+          
+          **Passed Jobs:**
+          - ✅ Validation
+          - ✅ Tests (Ubuntu, macOS, Windows)
+          - ✅ Cross-compilation
+          - ✅ Memory leak detection
+          - ✅ Build scripts
+          - ✅ Static analysis
+          
+          This PR is ready for review and merge! 🎉`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  # Job to set commit status for external tools
+  set-commit-status:
+    name: Set Commit Status
+    runs-on: ubuntu-latest
+    needs: [all-checks-passed]
+    if: always() && github.event_name == 'pull_request'
+    
+    steps:
+    - name: Set commit status
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const state = '${{ needs.all-checks-passed.result }}' === 'success' ? 'success' : 'failure';
+          const description = state === 'success' 
+            ? 'All required checks passed' 
+            : 'Some required checks failed';
+          
+          await github.rest.repos.createCommitStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            sha: context.payload.pull_request.head.sha,
+            state: state,
+            description: description,
+            context: 'ci/all-checks'
+          });

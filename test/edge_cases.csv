@@ -1,0 +1,13 @@
+id,empty_multiline,trailing_newline,only_newlines
+1,"","Content with trailing newline
+","
+"
+2,"Multiline
+empty in middle
+
+and more","Another case
+","
+
+
+"
+3,"Normal content","Simple text","No newlines here"

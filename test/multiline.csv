@@ -1,0 +1,12 @@
+id,name,description,address
+1,"John Doe","This is a multiline
+description with
+multiple lines","123 Main St
+Apt 4B
+New York, NY"
+2,"Jane Smith","Single line description","456 Oak Ave, Boston, MA"
+3,"Bob Johnson","Another multiline
+field with ""quotes"" and
+special characters: !@#$%","789 Pine St
+Suite 200
+Los Angeles, CA"

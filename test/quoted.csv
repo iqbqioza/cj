@@ -1,0 +1,5 @@
+id,name,description,quote
+1,"John Doe","A, B, C","He said ""Hello"""
+2,'Jane Smith',"Line 1
+Line 2","She said 'Hi'"
+3,Bob,"Normal text","Simple quote"

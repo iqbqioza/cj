@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-07-27
+
+### Added
+- Automatic release notes generation using GitHub API
+- Quick install commands in release notes
+  - Linux/macOS: `curl -fsSL https://raw.githubusercontent.com/iqbqioza/cj/main/cli/install.sh | bash`
+  - Windows PowerShell: `irm https://raw.githubusercontent.com/iqbqioza/cj/main/cli/install.ps1 | iex`
+
+### Fixed
+- Release workflow msys2 parameter (msys → msystem)
+- SHA256 checksum generation for glob patterns
+- Release creation handling for existing releases
+
 ## [0.1.1] - 2025-07-26
 
 ### Fixed

@@ -186,16 +186,43 @@ jobs:
         echo "Release assets:"
         ls -la release-assets/
     
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Get the previous tag
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        # Generate changelog for this release
+        if [ -n "$PREV_TAG" ]; then
+          echo "PREVIOUS_TAG=$PREV_TAG" >> $GITHUB_OUTPUT
+          echo "### What's Changed" > changelog_content.md
+          echo "" >> changelog_content.md
+          
+          # Get commit messages between tags
+          git log --pretty=format:"- %s" $PREV_TAG..HEAD | grep -v "Merge pull request" | grep -v "^- chore:" >> changelog_content.md || true
+          
+          echo "" >> changelog_content.md
+          echo "" >> changelog_content.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...${{ steps.version.outputs.VERSION }}" >> changelog_content.md
+        else
+          echo "Initial release" > changelog_content.md
+        fi
+    
     - name: Create release notes
       run: |
         cat > release_notes.md << 'EOF'
-        ## cj ${{ steps.version.outputs.VERSION }}
-        
         A fast, robust CSV to JSON converter written in C.
         
-        ### Download
+        EOF
         
-        #### Binaries
+        # Add generated changelog
+        cat changelog_content.md >> release_notes.md
+        
+        cat >> release_notes.md << 'EOF'
+        
+        ## Download
+        
+        ### Binaries
         
         **Linux**
         - [cj-linux-amd64](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-linux-amd64) - Linux x86_64
@@ -211,13 +238,13 @@ jobs:
         - [cj-windows-arm64.exe](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-windows-arm64.exe) - Windows ARM64
         - [cj-windows-native.exe](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-windows-native.exe) - Windows (native build)
         
-        #### Source Code
+        ### Source Code
         - [cj-${{ steps.version.outputs.VERSION }}-source.tar.gz](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-${{ steps.version.outputs.VERSION }}-source.tar.gz) - Source archive (tar.gz)
         - [cj-${{ steps.version.outputs.VERSION }}-source.zip](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-${{ steps.version.outputs.VERSION }}-source.zip) - Source archive (zip)
         
-        ### Installation
+        ## Installation
         
-        #### Linux/macOS
+        ### Linux/macOS
         ```bash
         # Download binary for your platform
         wget https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-linux-amd64
@@ -228,12 +255,12 @@ jobs:
         cj version
         ```
         
-        #### Windows
+        ### Windows
         1. Download the appropriate `.exe` file for your architecture
         2. Place it in a directory in your PATH
         3. Run `cj version` to verify installation
         
-        #### Build from Source
+        ### Build from Source
         ```bash
         # Download and extract source
         wget https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-${{ steps.version.outputs.VERSION }}-source.tar.gz
@@ -245,7 +272,7 @@ jobs:
         sudo make install
         ```
         
-        ### Verification
+        ## Verification
         
         All binaries include SHA256 checksums. Verify your download:
         
@@ -257,29 +284,68 @@ jobs:
         sha256sum -c SHA256SUMS --ignore-missing
         ```
         
-        ### Changes
-        
-        See [CHANGELOG.md](https://github.com/iqbqioza/cj/blob/main/CHANGELOG.md) for detailed changes.
-        
-        ### Support
+        ## Support
         
         - **Documentation**: [README.md](https://github.com/iqbqioza/cj/blob/main/README.md)
         - **Issues**: [GitHub Issues](https://github.com/iqbqioza/cj/issues)
         - **Contributing**: [CONTRIBUTING.md](https://github.com/iqbqioza/cj/blob/main/CONTRIBUTING.md)
         EOF
     
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ steps.version.outputs.VERSION }}
-        name: cj ${{ steps.version.outputs.VERSION }}
-        draft: false
-        prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
-        files: release-assets/*
-        body_path: release_notes.md
-        fail_on_unmatched_files: false
+    - name: Create Release with GitHub CLI
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Get auto-generated release notes from GitHub
+        PREV_TAG=${{ steps.changelog.outputs.PREVIOUS_TAG }}
+        if [ -n "$PREV_TAG" ]; then
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/releases/generate-notes \
+            -f tag_name='${{ steps.version.outputs.VERSION }}' \
+            -f target_commitish='${{ github.sha }}' \
+            -f previous_tag_name="$PREV_TAG" \
+            --jq '.body' > github_notes.md
+        else
+          echo "" > github_notes.md
+        fi
+        
+        # Combine custom notes with GitHub generated notes
+        cat > final_release_notes.md << 'EOF'
+        A fast, robust CSV to JSON converter written in C.
+        
+        EOF
+        
+        # Add GitHub auto-generated notes
+        if [ -s github_notes.md ]; then
+          cat github_notes.md >> final_release_notes.md
+          echo "" >> final_release_notes.md
+        else
+          cat changelog_content.md >> final_release_notes.md
+        fi
+        
+        # Add the rest of our custom content
+        tail -n +7 release_notes.md >> final_release_notes.md
+        
+        # Check if release already exists
+        if gh release view ${{ steps.version.outputs.VERSION }} >/dev/null 2>&1; then
+          echo "Release already exists, updating it..."
+          # Upload assets to existing release
+          for file in release-assets/*; do
+            if [ -f "$file" ]; then
+              gh release upload ${{ steps.version.outputs.VERSION }} "$file" --clobber || true
+            fi
+          done
+        else
+          echo "Creating new release..."
+          # Create release with combined notes
+          gh release create ${{ steps.version.outputs.VERSION }} \
+            --title "cj ${{ steps.version.outputs.VERSION }}" \
+            --notes-file final_release_notes.md \
+            ${{ contains(steps.version.outputs.VERSION, '-') && '--prerelease' || '' }} \
+            release-assets/*
+        fi
     
     - name: Create release summary
       run: |

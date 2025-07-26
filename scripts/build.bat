@@ -4,7 +4,7 @@ REM Windows batch script for building cj CSV to JSON converter
 setlocal enabledelayedexpansion
 
 REM Configuration
-set VERSION=1.0.0
+set VERSION=0.1.0
 set BUILD_DIR=build
 set TARGET=cj.exe
 

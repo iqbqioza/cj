@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-VERSION="1.0.0"
+VERSION="0.1.0"
 BUILD_DIR="build"
 DIST_DIR="dist"
 TARGETS=("linux-amd64" "linux-arm64" "darwin-amd64" "darwin-arm64" "windows-amd64" "windows-i386" "windows-arm64")

@@ -470,7 +470,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Version History
 
-- **v1.0.0**: Initial release with basic CSV to JSON conversion
+- **v0.1.0**: Initial release with basic CSV to JSON conversion
   - Dynamic memory management
   - Multiline field support
   - Cross-platform newline handling

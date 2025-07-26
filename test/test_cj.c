@@ -78,6 +78,26 @@ char* run_command(const char* command) {
     return output;
 }
 
+char* run_cj_command(const char* args) {
+    char cmd[1024];
+    char args_copy[1024];
+    strncpy(args_copy, args, sizeof(args_copy) - 1);
+    args_copy[sizeof(args_copy) - 1] = '\0';
+    
+#ifdef _WIN32
+    // Replace 2>/dev/null with 2>NUL for Windows
+    char* devnull = strstr(args_copy, "2>/dev/null");
+    if (devnull) {
+        memmove(devnull + 5, devnull + 11, strlen(devnull + 11) + 1);
+        memcpy(devnull, "2>NUL", 5);
+    }
+    snprintf(cmd, sizeof(cmd), "..\\cj.exe %s", args_copy);
+#else
+    snprintf(cmd, sizeof(cmd), "../cj %s", args_copy);
+#endif
+    return run_command(cmd);
+}
+
 int compare_json_output(const char* actual, const char* expected) {
     char* a = strdup(actual);
     char* e = strdup(expected);
@@ -106,7 +126,7 @@ int compare_json_output(const char* actual, const char* expected) {
 void test_basic_conversion() {
     printf(ANSI_COLOR_BLUE "\n=== Basic CSV Conversion Tests ===" ANSI_COLOR_RESET "\n");
     
-    char* output = run_command("../cj basic.csv 2>/dev/null");
+    char* output = run_cj_command("basic.csv 2>/dev/null");
     if (output) {
         test_assert(strstr(output, "\"no\": 1") != NULL, "Basic CSV field parsing");
         test_assert(strstr(output, "\"name\": \"Joe\"") != NULL, "String field parsing");
@@ -121,7 +141,7 @@ void test_basic_conversion() {
 void test_styled_output() {
     printf(ANSI_COLOR_BLUE "\n=== Styled Output Tests ===" ANSI_COLOR_RESET "\n");
     
-    char* output = run_command("../cj --styled basic.csv 2>/dev/null");
+    char* output = run_cj_command("--styled basic.csv 2>/dev/null");
     if (output) {
         test_assert(strstr(output, "[\n  {\n") != NULL, "Styled output format");
         test_assert(strstr(output, "    \"no\": 1") != NULL, "Styled output indentation");
@@ -130,7 +150,7 @@ void test_styled_output() {
         test_assert(0, "Styled output test");
     }
     
-    output = run_command("../cj -s basic.csv 2>/dev/null");
+    output = run_cj_command("-s basic.csv 2>/dev/null");
     if (output) {
         test_assert(strstr(output, "[\n  {\n") != NULL, "Short option -s works");
         free(output);
@@ -142,7 +162,7 @@ void test_styled_output() {
 void test_quoted_fields() {
     printf(ANSI_COLOR_BLUE "\n=== Quoted Fields Tests ===" ANSI_COLOR_RESET "\n");
     
-    char* output = run_command("../cj quoted.csv 2>/dev/null");
+    char* output = run_cj_command("quoted.csv 2>/dev/null");
     if (output) {
         test_assert(strstr(output, "\"name\": \"John Doe\"") != NULL, "Double quoted fields");
         test_assert(strstr(output, "\"description\": \"A, B, C\"") != NULL, "Quoted fields with commas");
@@ -156,7 +176,7 @@ void test_quoted_fields() {
 void test_numeric_detection() {
     printf(ANSI_COLOR_BLUE "\n=== Numeric Type Detection Tests ===" ANSI_COLOR_RESET "\n");
     
-    char* output = run_command("../cj numeric.csv 2>/dev/null");
+    char* output = run_cj_command("numeric.csv 2>/dev/null");
     if (output) {
         test_assert(strstr(output, "\"integer\": 42") != NULL, "Integer detection");
         test_assert(strstr(output, "\"float\": 3.14") != NULL, "Float detection");
@@ -171,7 +191,7 @@ void test_numeric_detection() {
 void test_large_file() {
     printf(ANSI_COLOR_BLUE "\n=== Large File Tests ===" ANSI_COLOR_RESET "\n");
     
-    char* output = run_command("../cj large.csv 2>/dev/null | wc -c");
+    char* output = run_cj_command("large.csv 2>/dev/null | wc -c");
     if (output) {
         int size = atoi(output);
         test_assert(size > 1000, "Large file processing");
@@ -184,7 +204,7 @@ void test_large_file() {
 void test_empty_fields() {
     printf(ANSI_COLOR_BLUE "\n=== Empty Fields Tests ===" ANSI_COLOR_RESET "\n");
     
-    char* output = run_command("../cj empty.csv 2>/dev/null");
+    char* output = run_cj_command("empty.csv 2>/dev/null");
     if (output) {
         test_assert(strstr(output, "\"empty1\": \"\"") != NULL, "Empty field handling");
         test_assert(strstr(output, "\"empty2\": \"\"") != NULL, "Multiple empty fields");
@@ -197,7 +217,7 @@ void test_empty_fields() {
 void test_version_command() {
     printf(ANSI_COLOR_BLUE "\n=== Command Line Tests ===" ANSI_COLOR_RESET "\n");
     
-    char* output = run_command("../cj version 2>/dev/null");
+    char* output = run_cj_command("version 2>/dev/null");
     if (output) {
         test_assert(strstr(output, "0.1.0") != NULL, "Version command");
         free(output);
@@ -207,7 +227,7 @@ void test_version_command() {
 }
 
 void test_usage_output() {
-    char* output = run_command("../cj 2>/dev/null");
+    char* output = run_cj_command("2>/dev/null");
     if (output) {
         test_assert(strstr(output, "Usage:") != NULL, "Usage output");
         test_assert(strstr(output, "cj [filename]") != NULL, "Usage format");
@@ -220,7 +240,7 @@ void test_usage_output() {
 void test_error_handling() {
     printf(ANSI_COLOR_BLUE "\n=== Error Handling Tests ===" ANSI_COLOR_RESET "\n");
     
-    char* output = run_command("../cj nonexistent.csv 2>&1");
+    char* output = run_cj_command("nonexistent.csv 2>&1");
     if (output) {
         test_assert(strstr(output, "Error: Cannot open file") != NULL, "File not found error");
         free(output);
@@ -232,7 +252,7 @@ void test_error_handling() {
 void test_special_characters() {
     printf(ANSI_COLOR_BLUE "\n=== Special Characters Tests ===" ANSI_COLOR_RESET "\n");
     
-    char* output = run_command("../cj special.csv 2>/dev/null");
+    char* output = run_cj_command("special.csv 2>/dev/null");
     if (output) {
         test_assert(strstr(output, "\"id\": 1") != NULL, "Basic field parsing with special chars");
         test_assert(strstr(output, "\\\"") != NULL, "Quote escape");
@@ -246,7 +266,7 @@ void test_special_characters() {
 void test_multiline_fields() {
     printf(ANSI_COLOR_BLUE "\n=== Multiline Fields Tests ===" ANSI_COLOR_RESET "\n");
     
-    char* output = run_command("../cj multiline.csv 2>/dev/null");
+    char* output = run_cj_command("multiline.csv 2>/dev/null");
     if (output) {
         test_assert(strstr(output, "\"id\": 1") != NULL, "Multiline CSV basic parsing");
         test_assert(strstr(output, "\\n") != NULL, "Newline escaping in JSON");
@@ -261,7 +281,7 @@ void test_multiline_fields() {
 void test_complex_newlines() {
     printf(ANSI_COLOR_BLUE "\n=== Complex Newlines Tests ===" ANSI_COLOR_RESET "\n");
     
-    char* output = run_command("../cj complex_newlines.csv 2>/dev/null");
+    char* output = run_cj_command("complex_newlines.csv 2>/dev/null");
     if (output) {
         test_assert(strstr(output, "\"type\": \"unix\"") != NULL, "Unix newline type");
         test_assert(strstr(output, "\"type\": \"windows\"") != NULL, "Windows newline type");
@@ -277,7 +297,7 @@ void test_complex_newlines() {
 void test_edge_cases() {
     printf(ANSI_COLOR_BLUE "\n=== Edge Cases Tests ===" ANSI_COLOR_RESET "\n");
     
-    char* output = run_command("../cj edge_cases.csv 2>/dev/null");
+    char* output = run_cj_command("edge_cases.csv 2>/dev/null");
     if (output) {
         test_assert(strstr(output, "\"id\": 1") != NULL, "Edge case basic parsing");
         test_assert(strstr(output, "\"empty_multiline\": \"\"") != NULL, "Empty multiline field");

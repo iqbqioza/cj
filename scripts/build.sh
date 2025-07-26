@@ -48,12 +48,12 @@ check_dependencies() {
     
     if command -v gcc &> /dev/null; then
         log_success "gcc found"
-        ((COMPILERS_FOUND++))
+        COMPILERS_FOUND=$((COMPILERS_FOUND + 1))
     fi
     
     if command -v clang &> /dev/null; then
         log_success "clang found"
-        ((COMPILERS_FOUND++))
+        COMPILERS_FOUND=$((COMPILERS_FOUND + 1))
     fi
     
     if command -v aarch64-linux-gnu-gcc &> /dev/null; then

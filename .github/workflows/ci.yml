@@ -315,6 +315,7 @@ jobs:
         echo "Running cppcheck static analysis..."
         cppcheck --enable=all --error-exitcode=1 \
           --suppress=missingIncludeSystem \
+          --suppress=toomanyconfigs \
           --quiet \
           src/
         echo "✅ cppcheck analysis passed"

@@ -48,6 +48,24 @@ A fast, robust CSV to JSON converter written in C that handles complex CSV scena
 
 ## Installation
 
+### Quick Install (Recommended)
+
+#### Linux/macOS
+```bash
+curl -fsSL https://raw.githubusercontent.com/iqbqioza/cj/main/cli/install.sh | bash
+```
+
+#### Windows (PowerShell)
+```powershell
+irm https://raw.githubusercontent.com/iqbqioza/cj/main/cli/install.ps1 | iex
+```
+
+The installer will:
+- Automatically detect your platform and architecture
+- Download the appropriate pre-built binary
+- Install cj to `~/.cj/bin` (or `%USERPROFILE%\.cj\bin` on Windows)
+- Configure your PATH automatically
+
 ### Build from Source
 
 #### Quick Build (Current Platform)

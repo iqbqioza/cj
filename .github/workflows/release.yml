@@ -244,7 +244,14 @@ jobs:
         
         ## Installation
         
-        ### Linux/macOS
+        ### Quick Install (Linux/macOS)
+        ```bash
+        curl -fsSL https://raw.githubusercontent.com/iqbqioza/cj/main/cli/install.sh | bash
+        ```
+        
+        ### Manual Installation
+        
+        #### Linux/macOS
         ```bash
         # Download binary for your platform
         wget https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-linux-amd64
@@ -255,7 +262,14 @@ jobs:
         cj version
         ```
         
-        ### Windows
+        #### Windows
+        
+        **PowerShell (Recommended)**
+        ```powershell
+        irm https://raw.githubusercontent.com/iqbqioza/cj/main/cli/install.ps1 | iex
+        ```
+        
+        **Manual Installation**
         1. Download the appropriate `.exe` file for your architecture
         2. Place it in a directory in your PATH
         3. Run `cj version` to verify installation

@@ -168,12 +168,25 @@ configure_shell() {
     printf '  %s\n' "$export_string" >&2
     printf 'Proceed? (y/N) ' >&2
     
-    # Read from original stdin
-    local response
+    # Read from terminal even when piped
+    local response="n"
+    
+    # Check if we can read from terminal
     if [[ -t 0 ]]; then
-        read -r response
+        # Running interactively
+        read -r response || response="n"
+    elif [[ -e /dev/tty ]]; then
+        # Try to read from terminal when piped
+        { read -r response < /dev/tty; } 2>/dev/null || {
+            # If reading from tty fails, inform user
+            printf '\n\033[1;33mNote:\033[0m Running in non-interactive mode. Skipping PATH setup.\n' >&2
+            printf 'To enable interactive prompts, run the installer directly:\n' >&2
+            printf '  curl -fsSL https://raw.githubusercontent.com/iqbqioza/cj/main/cli/install.sh -o install.sh\n' >&2
+            printf '  bash install.sh\n\n' >&2
+            response="n"
+        }
     else
-        # If not running interactively (e.g., piped), default to no
+        # No terminal available
         response="n"
     fi
     

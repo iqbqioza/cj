@@ -4,36 +4,31 @@
 
 set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-BOLD='\033[1m'
-RESET='\033[0m'
-
 # Configuration
 GITHUB_REPO="iqbqioza/cj"
 INSTALL_DIR="${CJ_INSTALL:-$HOME/.cj}"
 BIN_DIR="$INSTALL_DIR/bin"
 BINARY_NAME="cj"
 
+# Ensure all output goes to stderr except function returns
+exec 3>&1 1>&2
+
 # Helper functions
 error() {
-    echo -e "${RED}error${RESET}: $1" >&2
+    printf '\033[0;31merror\033[0m: %s\n' "$1"
     exit 1
 }
 
 info() {
-    echo -e "${BLUE}info${RESET}: $1"
+    printf '\033[0;34minfo\033[0m: %s\n' "$1"
 }
 
 success() {
-    echo -e "${GREEN}success${RESET}: $1"
+    printf '\033[0;32msuccess\033[0m: %s\n' "$1"
 }
 
 warning() {
-    echo -e "${YELLOW}warning${RESET}: $1"
+    printf '\033[1;33mwarning\033[0m: %s\n' "$1"
 }
 
 # Detect platform
@@ -83,7 +78,7 @@ detect_platform() {
     fi
 
     platform="${os}-${arch}"
-    echo "$platform"
+    echo "$platform" >&3
 }
 
 # Get latest release version
@@ -95,7 +90,7 @@ get_latest_version() {
         error "Failed to fetch latest version"
     fi
     
-    echo "$version"
+    echo "$version" >&3
 }
 
 # Download binary
@@ -110,17 +105,18 @@ download_binary() {
     fi
     
     local download_url="https://github.com/$GITHUB_REPO/releases/download/v${version}/${binary_name}"
-    local temp_file="$(mktemp)"
+    local temp_file
+    temp_file="$(mktemp)"
     
     info "Downloading cj v${version} for ${platform}..."
     info "From: $download_url"
     
     if ! curl -fsSL "$download_url" -o "$temp_file"; then
         rm -f "$temp_file"
-        error "Failed to download cj binary"
+        error "Failed to download cj binary from $download_url"
     fi
     
-    echo "$temp_file"
+    echo "$temp_file" >&3
 }
 
 # Install binary
@@ -140,7 +136,8 @@ install_binary() {
 
 # Configure shell
 configure_shell() {
-    local shell_name="$(basename "$SHELL")"
+    local shell_name
+    shell_name="$(basename "$SHELL")"
     local config_file
     local export_string="export PATH=\"$BIN_DIR:\$PATH\""
     
@@ -169,22 +166,26 @@ configure_shell() {
     fi
     
     # Ask user before modifying shell config
-    echo -e "\n${BOLD}Would you like to add cj to your PATH automatically?${RESET}"
-    echo -e "This will add the following line to $config_file:"
-    echo -e "  $export_string"
-    echo -n "Proceed? (y/N) "
-    read -r response
+    printf '\n\033[1mWould you like to add cj to your PATH automatically?\033[0m\n'
+    printf 'This will add the following line to %s:\n' "$config_file"
+    printf '  %s\n' "$export_string"
+    printf 'Proceed? (y/N) '
+    
+    # Read from original stdin
+    read -r response < /dev/tty
     
     if [[ "$response" =~ ^[Yy]$ ]]; then
-        echo "" >> "$config_file"
-        echo "# Added by cj installer" >> "$config_file"
-        echo "$export_string" >> "$config_file"
+        {
+            echo ""
+            echo "# Added by cj installer"
+            echo "$export_string"
+        } >> "$config_file"
         success "Added cj to PATH in $config_file"
-        echo -e "\n${BOLD}To start using cj, run:${RESET}"
-        echo -e "  source $config_file"
+        printf '\n\033[1mTo start using cj, run:\033[0m\n'
+        printf '  source %s\n' "$config_file"
     else
-        echo -e "\n${BOLD}To manually add cj to your PATH, add this to your shell config:${RESET}"
-        echo -e "  $export_string"
+        printf '\n\033[1mTo manually add cj to your PATH, add this to your shell config:\033[0m\n'
+        printf '  %s\n' "$export_string"
     fi
 }
 
@@ -202,7 +203,8 @@ verify_installation() {
     
     # Try to run version command
     if "$test_path" version &>/dev/null; then
-        local version=$("$test_path" version 2>&1 | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
+        local version
+        version=$("$test_path" version 2>&1 | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
         success "cj v${version} installed successfully!"
     else
         warning "Binary installed but version check failed"
@@ -211,8 +213,8 @@ verify_installation() {
 
 # Main installation flow
 main() {
-    echo -e "${BOLD}cj installer${RESET}"
-    echo -e "Installing cj - CSV to JSON converter\n"
+    printf '\033[1mcj installer\033[0m\n'
+    printf 'Installing cj - CSV to JSON converter\n\n'
     
     # Parse arguments
     local version=""
@@ -279,10 +281,10 @@ main() {
     # Verify installation
     verify_installation
     
-    echo -e "\n${BOLD}Next steps:${RESET}"
-    echo -e "  • Run 'cj --help' to see available commands"
-    echo -e "  • Visit https://github.com/$GITHUB_REPO for documentation"
-    echo -e "  • Report issues at https://github.com/$GITHUB_REPO/issues"
+    printf '\n\033[1mNext steps:\033[0m\n'
+    printf '  • Run '\''cj --help'\'' to see available commands\n'
+    printf '  • Visit https://github.com/%s for documentation\n' "$GITHUB_REPO"
+    printf '  • Report issues at https://github.com/%s/issues\n' "$GITHUB_REPO"
 }
 
 # Run main function

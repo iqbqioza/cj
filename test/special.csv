@@ -1,0 +1,5 @@
+id,text_with_newline,text_with_tab,text_with_quote
+1,"Line 1
+Line 2","Column	1","He said ""Hello"""
+2,"Another
+Newline","Tab	Here","She said ""World"""

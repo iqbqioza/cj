@@ -1,0 +1,4 @@
+integer,float,negative,text,mixed
+42,3.14,-10,abc123,123abc
+100,2.718,-5.5,hello,456def
+0,0.0,0,world,789ghi

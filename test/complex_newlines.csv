@@ -1,0 +1,14 @@
+type,content,notes
+"unix","Line 1
+Line 2
+Line 3","Standard Unix LF"
+"windows","Line 1
+Line 2
+Line 3","Windows CRLF simulation"
+"mixed","First line
+Second line
+Third line","Mixed newline types"
+"with_tabs","Data	with	tabs
+And	more	tabs","Tab and newline combo"
+"escaped_quotes","She said ""Hello
+World"" to me","Quotes with newlines"

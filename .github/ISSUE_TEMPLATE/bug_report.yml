@@ -1,0 +1,85 @@
+name: Bug Report
+description: File a bug report
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+        
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version of cj are you running?
+      placeholder: "Output of `./cj version`"
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: What platform are you running on?
+      options:
+        - Linux x86_64
+        - Linux ARM64
+        - macOS Intel
+        - macOS Apple Silicon
+        - Windows x86_64
+        - Windows i386
+        - Windows ARM64
+        - Other
+    validations:
+      required: true
+      
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+      
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Please provide the exact steps to reproduce this issue
+      placeholder: |
+        1. Run command `./cj example.csv`
+        2. See error message
+        3. ...
+    validations:
+      required: true
+      
+  - type: textarea
+    id: sample-data
+    attributes:
+      label: Sample CSV Data
+      description: If applicable, provide a minimal CSV file that reproduces the issue
+      placeholder: |
+        ```csv
+        header1,header2
+        value1,value2
+        ```
+      
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output
+      render: shell
+      
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: By submitting this issue, you agree to follow our Code of Conduct
+      options:
+        - label: I have searched existing issues to make sure this is not a duplicate
+          required: true
+        - label: I have provided all the information requested above
+          required: true

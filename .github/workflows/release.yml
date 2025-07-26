@@ -337,11 +337,100 @@ jobs:
           echo "" >> final_release_notes.md
         else
           cat changelog_content.md >> final_release_notes.md
+          echo "" >> final_release_notes.md
         fi
         
-        # Add the rest of our custom content (everything after the header)
-        # Skip the first few lines and add the rest
-        sed '1,6d' release_notes.md >> final_release_notes.md
+        # Add download section and everything after
+        cat >> final_release_notes.md << 'EOF'
+        ## Download
+        
+        ### Binaries
+        
+        **Linux**
+        - [cj-linux-amd64](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-linux-amd64) - Linux x86_64
+        - [cj-linux-arm64](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-linux-arm64) - Linux ARM64
+        
+        **macOS**
+        - [cj-darwin-amd64](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-darwin-amd64) - macOS Intel
+        - [cj-darwin-arm64](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-darwin-arm64) - macOS Apple Silicon
+        
+        **Windows**
+        - [cj-windows-amd64.exe](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-windows-amd64.exe) - Windows x86_64
+        - [cj-windows-i386.exe](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-windows-i386.exe) - Windows i386
+        - [cj-windows-arm64.exe](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-windows-arm64.exe) - Windows ARM64
+        - [cj-windows-native.exe](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-windows-native.exe) - Windows (native build)
+        
+        ### Source Code
+        - [cj-${{ steps.version.outputs.VERSION }}-source.tar.gz](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-${{ steps.version.outputs.VERSION }}-source.tar.gz) - Source archive (tar.gz)
+        - [cj-${{ steps.version.outputs.VERSION }}-source.zip](https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-${{ steps.version.outputs.VERSION }}-source.zip) - Source archive (zip)
+        
+        ## Installation
+        
+        ### Quick Install (Linux/macOS)
+        ```bash
+        curl -fsSL https://raw.githubusercontent.com/iqbqioza/cj/main/cli/install.sh | bash
+        ```
+        
+        ### Quick Install (Windows PowerShell)
+        ```powershell
+        irm https://raw.githubusercontent.com/iqbqioza/cj/main/cli/install.ps1 | iex
+        ```
+        
+        ### Manual Installation
+        
+        #### Linux/macOS
+        ```bash
+        # Download binary for your platform
+        wget https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-linux-amd64
+        chmod +x cj-linux-amd64
+        sudo mv cj-linux-amd64 /usr/local/bin/cj
+        
+        # Verify installation
+        cj version
+        ```
+        
+        #### Windows
+        
+        **PowerShell (Recommended)**
+        ```powershell
+        irm https://raw.githubusercontent.com/iqbqioza/cj/main/cli/install.ps1 | iex
+        ```
+        
+        **Manual Installation**
+        1. Download the appropriate `.exe` file for your architecture
+        2. Place it in a directory in your PATH
+        3. Run `cj version` to verify installation
+        
+        ### Build from Source
+        ```bash
+        # Download and extract source
+        wget https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/cj-${{ steps.version.outputs.VERSION }}-source.tar.gz
+        tar -xzf cj-${{ steps.version.outputs.VERSION }}-source.tar.gz
+        cd cj-${{ steps.version.outputs.VERSION }}
+        
+        # Build
+        make
+        sudo make install
+        ```
+        
+        ## Verification
+        
+        All binaries include SHA256 checksums. Verify your download:
+        
+        ```bash
+        # Download checksums
+        wget https://github.com/iqbqioza/cj/releases/download/${{ steps.version.outputs.VERSION }}/SHA256SUMS
+        
+        # Verify specific binary
+        sha256sum -c SHA256SUMS --ignore-missing
+        ```
+        
+        ## Support
+        
+        - **Documentation**: [README.md](https://github.com/iqbqioza/cj/blob/main/README.md)
+        - **Issues**: [GitHub Issues](https://github.com/iqbqioza/cj/issues)
+        - **Contributing**: [CONTRIBUTING.md](https://github.com/iqbqioza/cj/blob/main/CONTRIBUTING.md)
+        EOF
         
         # Try to create release first, if it fails then upload assets to existing release
         echo "Attempting to create release..."

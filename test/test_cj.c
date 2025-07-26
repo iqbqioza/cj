@@ -1,3 +1,7 @@
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,10 +12,6 @@
 #else
 #include <unistd.h>
 #include <sys/wait.h>
-#endif
-
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
 #endif
 
 #ifdef _WIN32

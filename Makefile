@@ -125,7 +125,7 @@ build-windows-amd64:
 	@mkdir -p $(BUILD_DIR)
 	$(MAKE) clean
 	@if command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then \
-		CC=x86_64-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" $(MAKE) TARGET=cj.exe $(TARGET) && \
+		CC=x86_64-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" $(MAKE) TARGET=cj.exe && \
 		mv cj.exe $(BUILD_DIR)/cj-windows-amd64.exe && \
 		echo "Built: $(BUILD_DIR)/cj-windows-amd64.exe"; \
 	else \
@@ -138,7 +138,7 @@ build-windows-i386:
 	@mkdir -p $(BUILD_DIR)
 	$(MAKE) clean
 	@if command -v i686-w64-mingw32-gcc >/dev/null 2>&1; then \
-		CC=i686-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" $(MAKE) TARGET=cj.exe $(TARGET) && \
+		CC=i686-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" $(MAKE) TARGET=cj.exe && \
 		mv cj.exe $(BUILD_DIR)/cj-windows-i386.exe && \
 		echo "Built: $(BUILD_DIR)/cj-windows-i386.exe"; \
 	else \

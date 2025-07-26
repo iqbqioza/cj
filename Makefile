@@ -125,7 +125,7 @@ build-windows-amd64:
 	@mkdir -p $(BUILD_DIR)
 	$(MAKE) clean
 	@if command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then \
-		CC=x86_64-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" $(MAKE) TARGET=cj.exe && \
+		$(MAKE) CC=x86_64-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" TARGET=cj.exe && \
 		mv cj.exe $(BUILD_DIR)/cj-windows-amd64.exe && \
 		echo "Built: $(BUILD_DIR)/cj-windows-amd64.exe"; \
 	else \
@@ -138,7 +138,7 @@ build-windows-i386:
 	@mkdir -p $(BUILD_DIR)
 	$(MAKE) clean
 	@if command -v i686-w64-mingw32-gcc >/dev/null 2>&1; then \
-		CC=i686-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" $(MAKE) TARGET=cj.exe && \
+		$(MAKE) CC=i686-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" TARGET=cj.exe && \
 		mv cj.exe $(BUILD_DIR)/cj-windows-i386.exe && \
 		echo "Built: $(BUILD_DIR)/cj-windows-i386.exe"; \
 	else \
@@ -150,11 +150,13 @@ build-windows-arm64:
 	@echo "Building for Windows ARM64..."
 	@mkdir -p $(BUILD_DIR)
 	$(MAKE) clean
-	CC=aarch64-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" $(MAKE) TARGET=cj.exe $(TARGET) 2>/dev/null || \
-	CC=clang CFLAGS="-Wall -Wextra -std=c99 -O2 -target aarch64-pc-windows-msvc" $(MAKE) TARGET=cj.exe $(TARGET) 2>/dev/null || \
-	CC=gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -D_WIN32 -D_ARM64_" $(MAKE) TARGET=cj.exe $(TARGET) 2>/dev/null || \
-	echo "Windows ARM64 cross-compiler not available, skipping..."
-	@if [ -f cj.exe ]; then mv cj.exe $(BUILD_DIR)/cj-windows-arm64.exe; echo "Built: $(BUILD_DIR)/cj-windows-arm64.exe"; fi
+	@if command -v aarch64-w64-mingw32-gcc >/dev/null 2>&1; then \
+		$(MAKE) CC=aarch64-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" TARGET=cj.exe && \
+		mv cj.exe $(BUILD_DIR)/cj-windows-arm64.exe && \
+		echo "Built: $(BUILD_DIR)/cj-windows-arm64.exe"; \
+	else \
+		echo "Windows ARM64 cross-compiler not available, skipping..."; \
+	fi
 
 # Build all platforms (if possible on current system)
 build-all: build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-arm64 build-windows-amd64 build-windows-i386 build-windows-arm64

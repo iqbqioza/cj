@@ -339,8 +339,9 @@ jobs:
           cat changelog_content.md >> final_release_notes.md
         fi
         
-        # Add the rest of our custom content
-        tail -n +7 release_notes.md >> final_release_notes.md
+        # Add the rest of our custom content (everything after the header)
+        # Skip the first few lines and add the rest
+        awk 'NR>6' release_notes.md >> final_release_notes.md
         
         # Check if release already exists
         if gh release view ${{ steps.version.outputs.VERSION }} >/dev/null 2>&1; then

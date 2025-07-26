@@ -10,25 +10,22 @@ INSTALL_DIR="${CJ_INSTALL:-$HOME/.cj}"
 BIN_DIR="$INSTALL_DIR/bin"
 BINARY_NAME="cj"
 
-# Ensure all output goes to stderr except function returns
-exec 3>&1 1>&2
-
 # Helper functions
 error() {
-    printf '\033[0;31merror\033[0m: %s\n' "$1"
+    printf '\033[0;31merror\033[0m: %s\n' "$1" >&2
     exit 1
 }
 
 info() {
-    printf '\033[0;34minfo\033[0m: %s\n' "$1"
+    printf '\033[0;34minfo\033[0m: %s\n' "$1" >&2
 }
 
 success() {
-    printf '\033[0;32msuccess\033[0m: %s\n' "$1"
+    printf '\033[0;32msuccess\033[0m: %s\n' "$1" >&2
 }
 
 warning() {
-    printf '\033[1;33mwarning\033[0m: %s\n' "$1"
+    printf '\033[1;33mwarning\033[0m: %s\n' "$1" >&2
 }
 
 # Detect platform
@@ -78,7 +75,7 @@ detect_platform() {
     fi
 
     platform="${os}-${arch}"
-    echo "$platform" >&3
+    echo "$platform"
 }
 
 # Get latest release version
@@ -90,7 +87,7 @@ get_latest_version() {
         error "Failed to fetch latest version"
     fi
     
-    echo "$version" >&3
+    echo "$version"
 }
 
 # Download binary
@@ -111,12 +108,12 @@ download_binary() {
     info "Downloading cj v${version} for ${platform}..."
     info "From: $download_url"
     
-    if ! curl -fsSL "$download_url" -o "$temp_file"; then
+    if ! curl -fsSL "$download_url" -o "$temp_file" 2>&1; then
         rm -f "$temp_file"
         error "Failed to download cj binary from $download_url"
     fi
     
-    echo "$temp_file" >&3
+    echo "$temp_file"
 }
 
 # Install binary
@@ -166,13 +163,19 @@ configure_shell() {
     fi
     
     # Ask user before modifying shell config
-    printf '\n\033[1mWould you like to add cj to your PATH automatically?\033[0m\n'
-    printf 'This will add the following line to %s:\n' "$config_file"
-    printf '  %s\n' "$export_string"
-    printf 'Proceed? (y/N) '
+    printf '\n\033[1mWould you like to add cj to your PATH automatically?\033[0m\n' >&2
+    printf 'This will add the following line to %s:\n' "$config_file" >&2
+    printf '  %s\n' "$export_string" >&2
+    printf 'Proceed? (y/N) ' >&2
     
     # Read from original stdin
-    read -r response < /dev/tty
+    local response
+    if [[ -t 0 ]]; then
+        read -r response
+    else
+        # If not running interactively (e.g., piped), default to no
+        response="n"
+    fi
     
     if [[ "$response" =~ ^[Yy]$ ]]; then
         {
@@ -181,11 +184,11 @@ configure_shell() {
             echo "$export_string"
         } >> "$config_file"
         success "Added cj to PATH in $config_file"
-        printf '\n\033[1mTo start using cj, run:\033[0m\n'
-        printf '  source %s\n' "$config_file"
+        printf '\n\033[1mTo start using cj, run:\033[0m\n' >&2
+        printf '  source %s\n' "$config_file" >&2
     else
-        printf '\n\033[1mTo manually add cj to your PATH, add this to your shell config:\033[0m\n'
-        printf '  %s\n' "$export_string"
+        printf '\n\033[1mTo manually add cj to your PATH, add this to your shell config:\033[0m\n' >&2
+        printf '  %s\n' "$export_string" >&2
     fi
 }
 
@@ -213,8 +216,8 @@ verify_installation() {
 
 # Main installation flow
 main() {
-    printf '\033[1mcj installer\033[0m\n'
-    printf 'Installing cj - CSV to JSON converter\n\n'
+    printf '\033[1mcj installer\033[0m\n' >&2
+    printf 'Installing cj - CSV to JSON converter\n\n' >&2
     
     # Parse arguments
     local version=""
@@ -231,12 +234,12 @@ main() {
                 shift
                 ;;
             --help)
-                echo "Usage: $0 [OPTIONS]"
-                echo ""
-                echo "Options:"
-                echo "  --version VERSION    Install specific version (default: latest)"
-                echo "  --skip-path-setup    Skip PATH configuration"
-                echo "  --help               Show this help message"
+                echo "Usage: $0 [OPTIONS]" >&2
+                echo "" >&2
+                echo "Options:" >&2
+                echo "  --version VERSION    Install specific version (default: latest)" >&2
+                echo "  --skip-path-setup    Skip PATH configuration" >&2
+                echo "  --help               Show this help message" >&2
                 exit 0
                 ;;
             *)
@@ -281,10 +284,10 @@ main() {
     # Verify installation
     verify_installation
     
-    printf '\n\033[1mNext steps:\033[0m\n'
-    printf '  • Run '\''cj --help'\'' to see available commands\n'
-    printf '  • Visit https://github.com/%s for documentation\n' "$GITHUB_REPO"
-    printf '  • Report issues at https://github.com/%s/issues\n' "$GITHUB_REPO"
+    printf '\n\033[1mNext steps:\033[0m\n' >&2
+    printf '  • Run '\''cj --help'\'' to see available commands\n' >&2
+    printf '  • Visit https://github.com/%s for documentation\n' "$GITHUB_REPO" >&2
+    printf '  • Report issues at https://github.com/%s/issues\n' "$GITHUB_REPO" >&2
 }
 
 # Run main function

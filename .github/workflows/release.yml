@@ -355,7 +355,7 @@ jobs:
           echo "Creating new release..."
           # Create release with combined notes
           gh release create ${{ steps.version.outputs.VERSION }} \
-            --title "cj ${{ steps.version.outputs.VERSION }}" \
+            --title "${{ steps.version.outputs.VERSION }}" \
             --notes-file final_release_notes.md \
             ${{ contains(steps.version.outputs.VERSION, '-') && '--prerelease' || '' }} \
             release-assets/*

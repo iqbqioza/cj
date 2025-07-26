@@ -124,19 +124,27 @@ build-windows-amd64:
 	@echo "Building for Windows AMD64..."
 	@mkdir -p $(BUILD_DIR)
 	$(MAKE) clean
-	CC=x86_64-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" $(MAKE) TARGET=cj.exe $(TARGET) 2>/dev/null || \
-	CC=gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -D_WIN32" $(MAKE) TARGET=cj.exe $(TARGET) 2>/dev/null || \
-	echo "Windows cross-compiler not available, skipping..."
-	@if [ -f cj.exe ]; then mv cj.exe $(BUILD_DIR)/cj-windows-amd64.exe; echo "Built: $(BUILD_DIR)/cj-windows-amd64.exe"; fi
+	@if command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then \
+		CC=x86_64-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" $(MAKE) TARGET=cj.exe $(TARGET) && \
+		mv cj.exe $(BUILD_DIR)/cj-windows-amd64.exe && \
+		echo "Built: $(BUILD_DIR)/cj-windows-amd64.exe"; \
+	else \
+		echo "❌ x86_64-w64-mingw32-gcc not found - cannot cross-compile for Windows AMD64" && \
+		exit 1; \
+	fi
 
 build-windows-i386:
 	@echo "Building for Windows i386..."
 	@mkdir -p $(BUILD_DIR)
 	$(MAKE) clean
-	CC=i686-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static -m32" $(MAKE) TARGET=cj.exe $(TARGET) 2>/dev/null || \
-	CC=gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -D_WIN32 -m32" $(MAKE) TARGET=cj.exe $(TARGET) 2>/dev/null || \
-	echo "Windows i386 cross-compiler not available, skipping..."
-	@if [ -f cj.exe ]; then mv cj.exe $(BUILD_DIR)/cj-windows-i386.exe; echo "Built: $(BUILD_DIR)/cj-windows-i386.exe"; fi
+	@if command -v i686-w64-mingw32-gcc >/dev/null 2>&1; then \
+		CC=i686-w64-mingw32-gcc CFLAGS="-Wall -Wextra -std=c99 -O2 -static" $(MAKE) TARGET=cj.exe $(TARGET) && \
+		mv cj.exe $(BUILD_DIR)/cj-windows-i386.exe && \
+		echo "Built: $(BUILD_DIR)/cj-windows-i386.exe"; \
+	else \
+		echo "❌ i686-w64-mingw32-gcc not found - cannot cross-compile for Windows i386" && \
+		exit 1; \
+	fi
 
 build-windows-arm64:
 	@echo "Building for Windows ARM64..."

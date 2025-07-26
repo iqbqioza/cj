@@ -1,8 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef _WIN32
+#define popen _popen
+#define pclose _pclose
+#else
 #include <unistd.h>
 #include <sys/wait.h>
+#endif
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
+#ifdef _WIN32
+char* strdup(const char* s) {
+    size_t len = strlen(s) + 1;
+    char* copy = malloc(len);
+    if (copy) {
+        memcpy(copy, s, len);
+    }
+    return copy;
+}
+#endif
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -178,7 +199,7 @@ void test_version_command() {
     
     char* output = run_command("../cj version 2>/dev/null");
     if (output) {
-        test_assert(strstr(output, "1.0.0") != NULL, "Version command");
+        test_assert(strstr(output, "0.1.0") != NULL, "Version command");
         free(output);
     } else {
         test_assert(0, "Version command test");

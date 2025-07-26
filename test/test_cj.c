@@ -219,7 +219,7 @@ void test_version_command() {
     
     char* output = run_cj_command("version 2>/dev/null");
     if (output) {
-        test_assert(strstr(output, "0.1.0") != NULL, "Version command");
+        test_assert(strstr(output, "0.1.2") != NULL, "Version command");
         free(output);
     } else {
         test_assert(0, "Version command test");

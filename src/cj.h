@@ -7,7 +7,7 @@
 #include <ctype.h>
 #include "platform.h"
 
-#define VERSION "0.1.0"
+#define VERSION "0.1.2"
 #define INITIAL_CAPACITY 16
 #define INITIAL_LINE_SIZE 256
 
